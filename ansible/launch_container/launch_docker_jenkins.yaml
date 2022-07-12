@@ -1,0 +1,31 @@
+---
+- hosts: all
+  become: true
+  vars:
+    default_name: "jenkins"
+
+  tasks:
+    - name: Pull jenkins container image
+      community.docker.docker_image:
+        name: jenkins/jenkins 
+        source: pull
+
+    - name: Create jenkins container
+      community.docker.docker_container:
+        name: "{{ default_name }}"  
+        image: jenkins/jenkins
+        ports:
+          - "8080:8080"
+          - "50000:50000"
+        volumes:
+          - "jenkins_home:/var/jenkins_home"
+          - "/var/run/docker.sock:/var/run/docker.sock"
+        state: started
+
+    - name: Display secret key
+      command: docker exec -i jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+      register: command_output
+
+    - name: Print secret key to the console
+      debug:
+        msg: "{{ command_output.stdout }}"
